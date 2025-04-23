@@ -15,7 +15,7 @@
 ## Installation 
 ```bash 
 git clone https://github.com/Damianzoub/Feature_Extraction.git
-cd Feature Extraction
+cd Feature_Extraction
 pip install -r requirements.txt
 ```
 
