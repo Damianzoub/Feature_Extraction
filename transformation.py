@@ -1,0 +1,179 @@
+import pandas as pd
+import datetime as dt
+from sklearn.impute import SimpleImputer
+
+
+'''
+features for extraction:
+1) ROT: mean value , std
+   Avg Speed: max, mean ,min , std
+   Accelearation: mean,max,min,std
+'''
+
+class DataTransformer:
+    def __init__(self,dataset_path,time_col='t',id_col='shipid',
+                 speed_col='speed',heading_col='heading',lat_col='lat',
+                 long_col='long',course_col='course',shiptype_col='shiptype'
+                 ,destination_col='destination',numeric_columns=None,categorical_columns=None):
+        self.dataset_path = dataset_path
+        self.data = None
+        self.time_col = time_col
+        self.id_col = id_col
+        self.speed_col = speed_col
+        self.heading_col = heading_col
+        self.lat_col = lat_col
+        self.long_col = long_col
+        self.course_col = course_col
+        self.destination_col = destination_col
+        self.shiptype_col =shiptype_col
+        self.numeric_columns = numeric_columns
+        self.categorical_columns = categorical_columns
+    
+    def load_data(self):
+        if self.dataset_path.endswith('.csv'):
+            self.data = pd.read_csv(self.dataset_path)
+            #return the dataset
+            
+        else:
+            raise ValueError('Only CSV files are supported for now')
+
+    """if we don't have null values then this function
+      below is not needed"""
+    def transform_dataset(self):
+        
+        if self.data is None:
+             raise ValueError("No data loaded. call first load_data() method")
+
+        numeric_col = [col for col in self.numeric_columns if col in self.data.columns]
+        cat_col = [col for col in self.categorical_columns if col in self.data.columns]
+
+        print("Numeric columns to impute:", numeric_col)
+        print("Categorical columns to impute: ",cat_col)
+        
+        numericImputer = SimpleImputer(strategy='mean')
+        categoricalImputer = SimpleImputer(strategy='most_frequent')
+
+        if numeric_col:
+             self.data[numeric_col] = numericImputer.fit_transform(self.data[numeric_col])
+        if cat_col:
+             self.data[cat_col] = categoricalImputer.fit_transform(self.data[cat_col])
+
+    def exist_null(self):
+         exist_null = []
+         for col in self.data.columns:
+              if self.data[col].isnull().sum() > 0:
+                 exist_null.append((col,self.data[col].isnull().sum()))
+         
+         if len(exist_null) == 0 :
+              return None 
+         else:
+              return exist_null   
+
+    def _categorize_time(self):
+         self.data[self.time_col] = pd.to_datetime(self.data[self.time_col])
+         # Fix rare edge case where timestamps end with 59:59 to avoid time bucketing conflicts
+         self.data.loc[(self.data[self.time_col].dt.minute==59) & (self.data[self.time_col].dt.second==59), self.time_col] = self.data[self.time_col] + pd.Timedelta(seconds=1)
+        
+         
+            
+    #returns the statistical values about the speed
+    def average_speed_per_id(self):
+            if self.speed_col not in self.data.columns:
+                 raise ValueError(f"{self.speed_col} doesn't exist in the dataset")
+            
+            self._categorize_time()
+
+            #transforms the data time to datime for categorization later
+            new_df = self.data
+            
+            #groups the id of an element for every timestamp that this id is located 
+            #and calculates the statical values of this ID
+            aggregate = new_df.groupby([self.id_col,self.time_col])[self.speed_col].agg(
+                 avg_speed = 'mean',
+                 max_speed= 'max',
+                 min_speed= 'min',
+                 std_speed= 'std'
+            ).reset_index()
+
+            #creates the total average statistical values (max,mean,min,std) for speed
+            return aggregate.groupby(self.id_col).agg({
+                 "avg_speed":"mean",
+                 "max_speed":"max",
+                 "min_speed":'min',
+                 "std_speed":"std"
+            }).reset_index()
+    
+    #acceleration function per id 
+    # statistical values (mean,max,min,std) per id
+    def acceleration_per_id(self):
+        if self.speed_col not in self.data.columns:
+             raise ValueError(f"{self.speed_col} column doesn't exist")
+        self._categorize_time()
+        new_df = self.data
+
+        new_df = new_df.sort_values(by=[self.id_col,self.time_col])
+        new_df['time_diff'] = new_df.groupby(self.id_col)[self.time_col].diff().dt.total_seconds().fillna(1)
+        new_df['speed_diff'] = new_df.groupby(self.id_col)[self.speed_col].diff().fillna(0)
+        new_df['acceleration'] = new_df['speed_diff']/new_df['time_diff']
+        return new_df.groupby(self.id_col)['acceleration'].agg(
+             avg_acceleration = 'mean',
+             max_acceleration='max',
+             min_acceleration = 'min',
+             std_acceleration = 'std'
+        ).reset_index()
+
+    #ROT statistical values per id
+    #mean, std values
+    def rot_per_id(self):
+         if self.heading_col not in self.data.columns:
+              raise ValueError(f"{self.heading_col} column doesn't exist")
+        
+         self._categorize_time()
+         new_df = self.data 
+         
+         new_df = new_df.sort_values(by=[self.id_col,self.time_col])
+         new_df['heading_diff'] = new_df.groupby(self.id_col)[self.heading_col].diff()
+         new_df['time_diff'] = new_df.groupby(self.id_col)[self.time_col].diff().dt.total_seconds().fillna(1)
+         new_df['ROT'] = new_df['heading_diff']/new_df['time_diff']
+         return new_df.groupby(self.id_col)['ROT'].agg(
+              rot_mean = 'mean',
+              rot_std = 'std'
+         ).reset_index()
+    
+    def get_all_features(self):
+         speed = self.average_speed_per_id()
+         acceleration = self.acceleration_per_id()
+         rot = self.rot_per_id()
+
+         return speed.merge(acceleration, on=self.id_col).merge(rot, on=self.id_col)
+
+
+
+
+#examples below if you want to test it remove the ""
+"""
+data_transform = DataTransformer(
+        dataset_path='ais.csv',
+        time_col='t',
+        id_col='shipid',
+        speed_col='speed',
+        heading_col='heading',
+        lat_col='lat',
+        long_col='long',
+        course_col='course',
+        shiptype_col='shiptype',
+        destination_col='destination',
+        numeric_columns=['heading', 'course', 'speed'],
+        categorical_columns=['shiptype', 'destination']
+    )
+
+data_transform.load_data()
+data_transform.transform_dataset()
+acceleration_df = data_transform.acceleration_per_id()
+rot_df = data_transform.rot_per_id()
+speed_df = data_transform.average_speed_per_id()
+features_df = data_transform.get_all_features()
+print(features_df)
+
+"""
+
