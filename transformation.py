@@ -8,6 +8,7 @@ features for extraction:
 1) ROT: mean value , std
    Avg Speed: max, mean ,min , std
    Accelearation: mean,max,min,std
+   Trajectories: start_latitude, start_longitude, end_latitude, end_longitude , start_time , end_time, duration_seconds, duration_hours
 '''
 
 class DataTransformer:
@@ -140,12 +141,7 @@ class DataTransformer:
               rot_std = 'std'
          ).reset_index()
     
-    def travel_time_per_id(self):
-         if self.time_col not in self.data.columns:
-              raise ValueError(f"{self.time_col} doesn't exist in the dataset")
-         self._categorize_time()
-         new_df = self.data_sort_values(by=[self.id_col,self.time_col])
-         new_df['time']
+    
 
     #we combine all the methods of this script
     #so we can get the DataFrame of the features
