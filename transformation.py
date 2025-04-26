@@ -1,7 +1,7 @@
 import pandas as pd
 import datetime as dt
 from sklearn.impute import SimpleImputer
-
+import numpy as np
 
 '''
 features for extraction:
@@ -140,15 +140,48 @@ class DataTransformer:
               rot_std = 'std'
          ).reset_index()
     
+    def travel_time_per_id(self):
+         if self.time_col not in self.data.columns:
+              raise ValueError(f"{self.time_col} doesn't exist in the dataset")
+         self._categorize_time()
+         new_df = self.data_sort_values(by=[self.id_col,self.time_col])
+         new_df['time']
+
+    #we combine all the methods of this script
+    #so we can get the DataFrame of the features
     def get_all_features(self):
          speed = self.average_speed_per_id()
          acceleration = self.acceleration_per_id()
          rot = self.rot_per_id()
+         traj = self.trajectory()
+         return (speed
+                .merge(acceleration, on=self.id_col)
+                .merge(rot, on=self.id_col)
+                .merge(traj,on=self.id_col)
+                )
 
-         return speed.merge(acceleration, on=self.id_col).merge(rot, on=self.id_col)
-
-
-
+    def trajectory(self):
+         if self.long_col not in self.data.columns:
+              raise ValueError(f'{self.long_col} not in the Dataset Columns')
+         if self.lat_col not in self.data.columns:
+              raise ValueError(f'{self.lat_col} not in the Dataset column')
+         new_data = self.data
+         new_data['t'] = pd.to_datetime(self.data['t'])
+     
+         grouped  = new_data.sort_values([self.id_col,self.time_col]).groupby(self.id_col)
+         features = grouped.agg(
+              start_lat = (self.lat_col,'first'),
+              start_long = (self.long_col,'first'),
+              end_lat = (self.lat_col,'last'),
+              end_long = (self.long_col,'last'),
+              start_time = (self.time_col,'first'),
+              end_time = (self.time_col , 'last')
+         )
+         features['duration_second'] = (features['end_time']-features['start_time']).dt.total_seconds()
+         features['duration_hour'] = features['duration_second']/3600
+         return features[['start_lat','start_long','end_lat',
+                          'end_long','start_time','end_time','duration_second'
+                          ,'duration_hour']]
 
 #examples below if you want to test it remove the ""
 """
@@ -159,7 +192,7 @@ data_transform = DataTransformer(
         speed_col='speed',
         heading_col='heading',
         lat_col='lat',
-        long_col='long',
+        long_col='lon',
         course_col='course',
         shiptype_col='shiptype',
         destination_col='destination',
@@ -176,4 +209,5 @@ features_df = data_transform.get_all_features()
 print(features_df)
 
 """
+
 
