@@ -175,6 +175,7 @@ class DataTransformer:
          )
          features['duration_second'] = (features['end_time']-features['start_time']).dt.total_seconds()
          features['duration_hour'] = features['duration_second']/3600
+         features = features.reset_index()
          return features[['start_lat','start_long','end_lat',
                           'end_long','start_time','end_time','duration_second'
                           ,'duration_hour']]
