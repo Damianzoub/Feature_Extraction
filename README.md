@@ -33,7 +33,7 @@ pip install -r requirements.txt
         speed_col='speed',
         heading_col='heading',
         lat_col='lat',
-        long_col='long',
+        long_col='lon',
         course_col='course',
         shiptype_col='shiptype',
         destination_col='destination',
