@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Trajectory Selector</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+
+        iframe {
+            width: 500px;
+            height: 400px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+        }
+
+        .stats {
+            max-width: 500px;
+        }
+
+        .stats h2 {
+            margin-top: 0;
+            margin-bottom: 1rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 0.5em 0.8em;
+            border-bottom: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background-color: #f5f5f5;
+        }
+
+        select {
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</head>
+<body>
+    <div>
+        <label for="trajectory-select"><strong>Select Trajectory:</strong></label><br>
+        <select id="trajectory-select">
+            <option value="" disabled selected>Choose a trajectory</option>
+            {% for tid in trajectory_ids %}
+                <option value="{{ tid }}">{{ tid }}</option>
+            {% endfor %}
+        </select>
+
+        <iframe id="map-frame" src="" style="display:none;"></iframe>
+    </div>
+
+    <div class="stats" id="stats" style="display:none;">
+        <h2>Trajectory Meta-Features</h2>
+        <table>
+            <tbody>
+                <tr><th>#Points</th><td id="num-points"></td></tr>
+                <tr><th>Start coordinates</th><td id="start-coords"></td></tr>
+                <tr><th>End coordinates</th><td id="end-coords"></td></tr>
+                <tr><th>Max Speed</th><td id="max-speed"></td></tr>
+                <tr><th>Min Speed</th><td id="min-speed"></td></tr>
+                <tr><th>Avg Speed</th><td id="avg-speed"></td></tr>
+                <tr><th>Std Speed</th><td id="std-speed"></td></tr>
+                <tr><th>Max Acceleration</th><td id="max-acc"></td></tr>
+                <tr><th>Min Acceleration</th><td id="min-acc"></td></tr>
+                <tr><th>Avg Acceleration</th><td id="avg-acc"></td></tr>
+                <tr><th>Std Acceleration</th><td id="std-acc"></td></tr>
+                <tr><th>Avg RoT</th><td id="avg-rot"></td></tr>
+                <tr><th>Std RoT</th><td id="std-rot"></td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const select = document.getElementById('trajectory-select');
+        const iframe = document.getElementById('map-frame');
+        const statsDiv = document.getElementById('stats');
+
+        const elements = {
+            num_points: document.getElementById('num-points'),
+            start: document.getElementById('start-coords'),
+            end: document.getElementById('end-coords'),
+            max_speed: document.getElementById('max-speed'),
+            min_speed: document.getElementById('min-speed'),
+            avg_speed: document.getElementById('avg-speed'),
+            std_speed: document.getElementById('std-speed'),
+            max_acc: document.getElementById('max-acc'),
+            min_acc: document.getElementById('min-acc'),
+            avg_acc: document.getElementById('avg-acc'),
+            std_acc: document.getElementById('std-acc'),
+            mean_rot: document.getElementById('avg-rot'),
+            std_rot: document.getElementById('std-rot')
+        };
+
+        select.addEventListener('change', async () => {
+            const tid = select.value;
+            if (!tid) return;
+
+            const res = await fetch(`/trajectory/${tid}`);
+            if (!res.ok) {
+                alert("Trajectory not found");
+                return;
+            }
+
+            const data = await res.json();
+            iframe.src = data.map_url;
+            iframe.style.display = 'block';
+
+            for (const [key, el] of Object.entries(elements)) {
+                el.textContent = data.stats[key];
+            }
+
+            statsDiv.style.display = 'block';
+        });
+    </script>
+</body>
+</html>

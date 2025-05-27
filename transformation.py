@@ -153,7 +153,7 @@ class DataTransformer:
          return (speed
                 .merge(acceleration, on=self.id_col)
                 .merge(rot, on=self.id_col)
-                .merge(traj,on=self.id_col)
+                #.merge(traj,on=self.id_col)
                 )
 
     def trajectory(self):
