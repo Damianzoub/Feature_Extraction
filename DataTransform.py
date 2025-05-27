@@ -1,6 +1,6 @@
 import pandas as pd
 #file path utils for 
-from utils.data_loader import data_loader
+from utils.data_loader import load_csv
 from utils.Imputer import transform_dataset
 from utils.time_utils import categorize_time
 
@@ -29,7 +29,7 @@ class DataTransformer:
         self.categorical_cols=categorical_cols
 
     def load_data(self):
-        self.data = data_loader(self.dataset_path)
+        self.data = load_csv(self.dataset_path)
     
     def transfrom_dataset(self):
         if self.data is None:
