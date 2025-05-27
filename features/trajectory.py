@@ -13,9 +13,9 @@ def trajectory(df,id_col,time_col,lat_col,long_col):
         start_time=(time_col, 'first'),
         end_time=(time_col, 'last')
     )
-    features['duration_second'] = (features['end-time']-features['start_time']).dt.total_seconds()
-    features['duration_hour'] = df['duration_second']/3600
+    features['duration_second'] = (features['end_time']-features['start_time']).dt.total_seconds()
+    features['duration_hour'] = features['duration_second']/3600
     features = features.reset_index()
-    return features[['start_lat','start_long','end_lat',
+    return features[[id_col,'start_lat','start_long','end_lat',
                           'end_long','start_time','end_time','duration_second'
-                          ,'duration_hour']].reset_index()
+                          ,'duration_hour']]
