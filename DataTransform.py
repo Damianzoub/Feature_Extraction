@@ -8,10 +8,10 @@ from features.speed import average_speed_per_id
 from features.acceleration import acceleration_per_id
 from features.rot import rot_per_id
 from features.trajectory import trajectory
-
+from features.distance_and_straightness import _compute_total_and_straightness_metrics
 class DataTransformer:
     def __init__(self,dataset_path,time_col='t',id_col='shipid',speed_col='speed',
-                 heading_col='heading',lat_col='lat',long_col='lon',course_col='course'
+                 heading_col='heading',lat_col='lat',lon_col='lon',course_col='course'
                  ,shiptype_col='shiptype',destination_col='destination',numeric_cols=None,categorical_cols=None):
         
         self.dataset_path= dataset_path
@@ -21,7 +21,7 @@ class DataTransformer:
         self.speed_col=speed_col
         self.heading_col=heading_col
         self.lat_col=lat_col
-        self.long_col=long_col
+        self.lon_col=lon_col
         self.course_col=course_col
         self.shiptype_col=shiptype_col
         self.destination_col=destination_col
@@ -43,9 +43,11 @@ class DataTransformer:
         speed = average_speed_per_id(self.data,self.id_col,self.time_col,self.speed_col)
         acceleration= acceleration_per_id(self.data,self.time_col,self.id_col,self.speed_col)
         rot = rot_per_id(self.data,self.heading_col,self.id_col,self.time_col)
-        traj = trajectory(self.data,self.id_col,self.time_col,self.lat_col,self.long_col)
-        
+        traj = trajectory(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
+        distance_metrics = _compute_total_and_straightness_metrics(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
         return (speed.merge(acceleration,on=self.id_col)
                 .merge(rot,on=self.id_col)
-                .merge(traj,on=self.id_col))
+                .merge(traj,on=self.id_col)
+                .merge(distance_metrics,on=self.id_col)
+                )
         
