@@ -2,7 +2,7 @@ import pandas as pd
 import datetime as dt
 from sklearn.impute import SimpleImputer
 import numpy as np
-
+from geopy.distance import geodesic
 '''
 features for extraction:
 1) ROT: mean value , std
@@ -141,8 +141,38 @@ class DataTransformer:
               rot_std = 'std'
          ).reset_index()
     
-    
+    def _compute_total_and_straightness_metrics(self):
+        required_cols = [self.id_col, self.time_col, self.lat_col, self.long_col]
+        if not all(col in self.data.columns for col in required_cols):
+            raise ValueError("Missing one or more required columns in the dataset.")
 
+        new_df = self.data.sort_values(by=[self.id_col, self.time_col])
+
+        result = new_df.groupby(self.id_col).apply(
+            lambda group: self._compute_metrics(group)
+        ).reset_index()
+
+        return result[[self.id_col, 'total_distance_km', 'straightness_ratio', 'tortuosity']]
+
+    def _compute_metrics(self, group):
+        coords = list(zip(group[self.lat_col], group[self.long_col]))
+        total_distance = sum(
+            geodesic(coords[i], coords[i + 1]).kilometers
+            for i in range(len(coords) - 1)
+        ) if len(coords) >= 2 else 0.0
+
+        if len(coords) < 2:
+            straightness, tortuosity = 0.0, 0.0
+        else:
+            direct_distance = geodesic(coords[0], coords[-1]).kilometers
+            straightness = 0 if total_distance == 0 else direct_distance / total_distance
+            tortuosity = 0 if direct_distance == 0 else total_distance / direct_distance
+
+        return pd.Series({
+            'total_distance_km': total_distance,
+            'straightness_ratio': straightness,
+            'tortuosity': tortuosity
+        })
     #we combine all the methods of this script
     #so we can get the DataFrame of the features
     def get_all_features(self):
@@ -150,10 +180,12 @@ class DataTransformer:
          acceleration = self.acceleration_per_id()
          rot = self.rot_per_id()
          traj = self.trajectory()
+         spatial_metrics = self._compute_total_and_straightness_metrics()
          return (speed
                 .merge(acceleration, on=self.id_col)
                 .merge(rot, on=self.id_col)
-                #.merge(traj,on=self.id_col)
+                .merge(traj,on=self.id_col)
+                .merge(spatial_metrics,on=self.id_col)
                 )
 
     def trajectory(self):
@@ -176,11 +208,12 @@ class DataTransformer:
          features['duration_second'] = (features['end_time']-features['start_time']).dt.total_seconds()
          features['duration_hour'] = features['duration_second']/3600
          features = features.reset_index()
-         return features[['start_lat','start_long','end_lat',
+         return features[[self.id_col,'start_lat','start_long','end_lat',
                           'end_long','start_time','end_time','duration_second'
                           ,'duration_hour']]
 
 #examples below if you want to test it remove the ""
+
 """
 data_transform = DataTransformer(
         dataset_path='ais.csv',
