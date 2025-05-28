@@ -1,5 +1,7 @@
 import pandas as pd 
 from utils.time_utils import categorize_time
+
+
 def acceleration_per_id(df,time_col,id_col,speed_col):
     if time_col not in df.columns:
         raise ValueError(f"{time_col} not in dataset")

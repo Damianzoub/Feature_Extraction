@@ -8,6 +8,14 @@
             font-family: Arial, sans-serif;
             padding: 2rem;
             display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1.5rem;
+        }
+
+        .main-container {
+            display: flex;
+            flex-direction: row;
             gap: 2rem;
         }
 
@@ -19,89 +27,95 @@
         }
 
         .stats {
-            max-width: 500px;
+            max-width: 400px;
         }
 
         .stats h2 {
             margin-top: 0;
-            margin-bottom: 1rem;
         }
 
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-
-        th, td {
-            padding: 0.5em 0.8em;
-            border-bottom: 1px solid #ddd;
-            text-align: left;
-        }
-
-        th {
-            background-color: #f5f5f5;
+        .stats p {
+            margin: 0.5em 0;
         }
 
         select {
             font-size: 1rem;
             margin-bottom: 1rem;
         }
+
+        button {
+            padding: 0.6rem 1.2rem;
+            font-size: 1rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
     </style>
 </head>
 <body>
-    <div>
-        <label for="trajectory-select"><strong>Select Trajectory:</strong></label><br>
-        <select id="trajectory-select">
-            <option value="" disabled selected>Choose a trajectory</option>
-            {% for tid in trajectory_ids %}
-                <option value="{{ tid }}">{{ tid }}</option>
-            {% endfor %}
-        </select>
+    <label for="trajectory-select"><strong>Select Trajectory:</strong></label><br>
+    <select id="trajectory-select">
+        <option value="" disabled selected>Choose a trajectory</option>
+        {% for tid in trajectory_ids %}
+            <option value="{{ tid }}">{{ tid }}</option>
+        {% endfor %}
+    </select>
 
+    <div class="main-container">
         <iframe id="map-frame" src="" style="display:none;"></iframe>
+
+        <div class="stats" id="stats" style="display:none;">
+            <h2>Trajectory Meta-Features</h2>
+            <p><strong>#Points:</strong> <span id="num-points"></span></p>
+            <p><strong>Start coordinates:</strong> <span id="start-coords"></span></p>
+            <p><strong>End coordinates:</strong> <span id="end-coords"></span></p>
+            <p><strong>Maximum Speed:</strong> <span id="max-speed"></span> km/h</p>
+            <p><strong>Minimum Speed:</strong> <span id="min-speed"></span> km/h</p>
+            <p><strong>Average Speed:</strong> <span id="avg-speed"></span> km/h</p>
+            <p><strong>StD Speed:</strong> <span id="std-speed"></span> km/h</p>
+            <p><strong>Maximum Acceleration:</strong> <span id="max-acc"></span> km/h</p>
+            <p><strong>Minimum Acceleration:</strong> <span id="min-acc"></span> km/h</p>
+            <p><strong>Average Acceleration:</strong> <span id="avg-acc"></span> km/h</p>
+            <p><strong>StD Acceleration:</strong> <span id="std-acc"></span> km/h</p>
+            <p><strong>Average RoT:</strong> <span id="avg-rot"></span> km/h</p>
+            <p><strong>StD RoT:</strong> <span id="std-rot"></span> km/h</p>
+        </div>
     </div>
 
-    <div class="stats" id="stats" style="display:none;">
-        <h2>Trajectory Meta-Features</h2>
-        <table>
-            <tbody>
-                <tr><th>#Points</th><td id="num-points"></td></tr>
-                <tr><th>Start coordinates</th><td id="start-coords"></td></tr>
-                <tr><th>End coordinates</th><td id="end-coords"></td></tr>
-                <tr><th>Max Speed</th><td id="max-speed"></td></tr>
-                <tr><th>Min Speed</th><td id="min-speed"></td></tr>
-                <tr><th>Avg Speed</th><td id="avg-speed"></td></tr>
-                <tr><th>Std Speed</th><td id="std-speed"></td></tr>
-                <tr><th>Max Acceleration</th><td id="max-acc"></td></tr>
-                <tr><th>Min Acceleration</th><td id="min-acc"></td></tr>
-                <tr><th>Avg Acceleration</th><td id="avg-acc"></td></tr>
-                <tr><th>Std Acceleration</th><td id="std-acc"></td></tr>
-                <tr><th>Avg RoT</th><td id="avg-rot"></td></tr>
-                <tr><th>Std RoT</th><td id="std-rot"></td></tr>
-            </tbody>
-        </table>
+    <button id="show-timeseries-btn" style="display:none;">Show Speed Time Series</button>
+
+    {% if plot_html_file %}
+    <div class="plot-container">
+        <h3>Interactive Speed Plot for Trajectory {{ trajectory_id }}</h3>
+        <iframe src="{{ plot_html_file }}" width="2000%" height="100px" style="border:none;"></iframe>
     </div>
+    {% endif %}
 
     <script>
         const select = document.getElementById('trajectory-select');
         const iframe = document.getElementById('map-frame');
         const statsDiv = document.getElementById('stats');
+        const showBtn = document.getElementById('show-timeseries-btn');
 
-        const elements = {
-            num_points: document.getElementById('num-points'),
-            start: document.getElementById('start-coords'),
-            end: document.getElementById('end-coords'),
-            max_speed: document.getElementById('max-speed'),
-            min_speed: document.getElementById('min-speed'),
-            avg_speed: document.getElementById('avg-speed'),
-            std_speed: document.getElementById('std-speed'),
-            max_acc: document.getElementById('max-acc'),
-            min_acc: document.getElementById('min-acc'),
-            avg_acc: document.getElementById('avg-acc'),
-            std_acc: document.getElementById('std-acc'),
-            mean_rot: document.getElementById('avg-rot'),
-            std_rot: document.getElementById('std-rot')
-        };
+        const numPoints = document.getElementById('num-points');
+        const startCoords = document.getElementById('start-coords');
+        const endCoords = document.getElementById('end-coords');
+        const maxSpeed = document.getElementById('max-speed');
+        const minSpeed = document.getElementById('min-speed');
+        const avgSpeed = document.getElementById('avg-speed');
+        const stdSpeed = document.getElementById('std-speed');
+        const maxAcc = document.getElementById('max-acc');
+        const minAcc = document.getElementById('min-acc');
+        const avgAcc = document.getElementById('avg-acc');
+        const stdAcc = document.getElementById('std-acc');
+        const avgRot = document.getElementById('avg-rot');
+        const stdRot = document.getElementById('std-rot');
 
         select.addEventListener('change', async () => {
             const tid = select.value;
@@ -114,15 +128,47 @@
             }
 
             const data = await res.json();
+
             iframe.src = data.map_url;
             iframe.style.display = 'block';
 
-            for (const [key, el] of Object.entries(elements)) {
-                el.textContent = data.stats[key];
-            }
+            numPoints.textContent = data.stats.num_points;
+            startCoords.textContent = data.stats.start;
+            endCoords.textContent = data.stats.end;
+            maxSpeed.textContent = data.stats.max_speed;
+            minSpeed.textContent = data.stats.min_speed;
+            avgSpeed.textContent = data.stats.avg_speed;
+            stdSpeed.textContent = data.stats.std_speed;
+            maxAcc.textContent = data.stats.max_acc;
+            minAcc.textContent = data.stats.min_acc;
+            avgAcc.textContent = data.stats.avg_acc;
+            stdAcc.textContent = data.stats.std_acc;
+            avgRot.textContent = data.stats.mean_rot;
+            stdRot.textContent = data.stats.std_rot;
 
             statsDiv.style.display = 'block';
+            showBtn.style.display = 'inline-block';
         });
+
+        showBtn.addEventListener('click', () => {
+            const tid = select.value;
+            if (!tid) return;
+            window.location.href = `/trajectory/${tid}/plot`;
+        });
+        select.addEventListener('change', function () {
+        const tid = this.value;
+
+        fetch(`/trajectory/${tid}`)
+            .then(response => response.json())
+            .then(data => {
+                // Update map or other elements...
+
+                // Update iframe with plot
+                const plotFrame = document.getElementById('plot-frame');
+                plotFrame.src = `/static/plot_${tid}.html?ts=${Date.now()}`;  // Cache-busting
+                plotFrame.style.display = 'block';
+            });
+    });
     </script>
 </body>
 </html>

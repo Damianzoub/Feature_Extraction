@@ -1,5 +1,6 @@
 import pandas as pd 
 
+
 def trajectory(df,id_col,time_col,lat_col,long_col):
     new_df = df.copy()
     new_df[time_col] = pd.to_datetime(new_df[time_col])

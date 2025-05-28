@@ -9,6 +9,9 @@ from collections import defaultdict
 import csv
 import sys
 import numpy as np
+from functionalities import *
+import plotly.graph_objects as go
+import plotly.io as pio
 
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from transformation import DataTransformer
@@ -125,6 +128,45 @@ async def get_trajectory(tid: str):
         "stats": stats,
         "map_url": f"/static/map_{tid}.html"
     }
+
+
+@app.get("/trajectory/{tid}/plot", response_class=HTMLResponse)
+async def plot_trajectory_timeseries(request: Request, tid: str = None):
+    plot_html_file = None
+
+    if tid not in trajectory_data:
+        return HTMLResponse(content="Trajectory not found", status_code=404)
+
+    df = speed(data.loc[data.shipid == tid])
+    timestamps = pd.to_datetime(df["t"])
+    speeds = df["Speed"]
+
+    accelerations = np.gradient(speeds, edge_order=2)
+
+    fig = go.Figure()
+    fig.add_trace(go.Scatter(x=timestamps, y=speeds, mode='lines', name='Speed (km/h)'))
+    fig.add_trace(go.Scatter(x=timestamps, y=accelerations, mode='lines', name='Acceleration (km/h^2)'))
+    fig.update_layout(xaxis_title="Time", yaxis_title="Value")
+
+    fig.update_layout(
+        autosize=True,
+        height=600,
+    )
+    fig.write_html("static/plot.html", include_plotlyjs='cdn', full_html=True)
+
+    plot_filename = f"plot_{tid}.html"
+    plot_path = os.path.join("static", plot_filename)
+    pio.write_html(fig, file=plot_path, auto_open=False, include_plotlyjs='cdn')
+
+    plot_html_file = f"/static/{plot_filename}"
+
+    # Now render the template with the URL of the saved plot image
+    return templates.TemplateResponse("index.html", {
+        "request": request,
+        "trajectory_id": tid,
+        "plot_html_file": plot_html_file
+    })
+
 
 """
 To run it:
