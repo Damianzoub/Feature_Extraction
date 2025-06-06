@@ -192,7 +192,7 @@ class DataTransformer:
          return result[[self.id_col,'max_spatial_spread']]
 
     def calculate_max_spread_per_group(self,df):
-      x = df[['lat','lon]].values
+      x = df[['lat','lon']].values
 
       #Not enought points for ConvexHull algorithm
       if len(x) < 3:
