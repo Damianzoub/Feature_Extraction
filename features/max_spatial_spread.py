@@ -25,11 +25,41 @@ import pandas as pd
 import numpy as np
 from scipy.spatial import ConvexHull
 
-
+#Haversine formula
 def haversine(x, y):
     return geodesic(x, y).meters
 
+#implementation of the example in the Data CSV
+def calculate_max_spread_per_group(group):
+    x = group[['lat','lon']].values
 
+    if len(x)< 3:
+        max_spread = 0.0
+    else:
+        try:
+            hull = ConvexHull(x)
+            hull_points = x[hull.vertices]
+            distance_matrix = pwd(hull_points,hull_points,metric=haversine)
+            max_spread= distance_matrix.max()
+        except QhullError:
+            max_spread = 0.0
+    return pd.Series({
+        'max_spatial_spread':max_spread
+    }) 
+
+#Return the results with (id_col and the max_spatial_spread)
+def compute_max_spatial_spread(df,id_col,time_col,lat_col,lon_col):
+    required_cols = [id_col,time_col, lat_col,lon_col]
+    if not all (cols in df.columns for cols in required_cols):
+        raise ValueError("Missing columns")
+    
+    new_df = df.sort_values(by=[id_col,time_col])
+    result = new_df.groupby(id_col).apply(
+        lambda group: calculate_max_spread_per_group(group)
+    ).reset_index()
+    return result[[id_col,'max_spatial_spread']]
+
+#simple example 
 def max_spread(df, ch=False):
     """
     This method returns the maximum spread distance for a set of spatial points P max_{i,j}d(P_i, P_j), \forall P_i, P_j \in P
