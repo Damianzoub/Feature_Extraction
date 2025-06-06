@@ -3,12 +3,14 @@ import pandas as pd
 from utils.data_loader import load_csv
 from utils.Imputer import transform_dataset
 from utils.time_utils import categorize_time
-
 from features.speed import average_speed_per_id
 from features.acceleration import acceleration_per_id
 from features.rot import rot_per_id
 from features.trajectory import trajectory
 from features.distance_and_straightness import _compute_total_and_straightness_metrics
+from features.max_spread import compute_max_spatial_spread
+
+
 class DataTransformer:
     def __init__(self,dataset_path,time_col='t',id_col='shipid',speed_col='speed',
                  heading_col='heading',lat_col='lat',lon_col='lon',course_col='course'
@@ -45,9 +47,12 @@ class DataTransformer:
         rot = rot_per_id(self.data,self.heading_col,self.id_col,self.time_col)
         traj = trajectory(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
         distance_metrics = _compute_total_and_straightness_metrics(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
+        max_spread = compute_max_spatial_spread(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
+
         return (speed.merge(acceleration,on=self.id_col)
                 .merge(rot,on=self.id_col)
                 .merge(traj,on=self.id_col)
                 .merge(distance_metrics,on=self.id_col)
+                .merge(max_spread,on=self.id_col)
                 )
         
