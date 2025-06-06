@@ -1,6 +1,8 @@
 import pandas as pd
 import datetime as dt
 from sklearn.impute import SimpleImputer
+from sklearn.metrics import pairwise_distances as pwd
+from scipy.spatial import ConvexHull, QhullError
 import numpy as np
 from geopy.distance import geodesic
 '''
@@ -140,7 +142,8 @@ class DataTransformer:
               rot_mean = 'mean',
               rot_std = 'std'
          ).reset_index()
-    
+
+   #Total Distance and Tortuosity and Straightness_Ratio
     def _compute_total_and_straightness_metrics(self):
         required_cols = [self.id_col, self.time_col, self.lat_col, self.long_col]
         if not all(col in self.data.columns for col in required_cols):
@@ -173,6 +176,39 @@ class DataTransformer:
             'straightness_ratio': straightness,
             'tortuosity': tortuosity
         })
+    #Haversine formula from geopy
+    def haversine(self,x,y):
+          return geodesic(x,y).meters
+   
+    def compute_max_spatial_spread(self):
+         required_cols = [self.id_col,self.time_col,self.lat_col,self.long_col]
+         if not all(col in self.data.columns for col in required_cols):
+              raise ValueError("Missing one or more required columns")
+         
+         new_df = self.data.sort_values(by=[self.id_col,self.time_col])
+         result = new_df.groupby(self.id_col).apply(
+          lambda group: self.calculate_max_spread_per_group(group)
+         ).reset_index()
+         return result[[self.id_col,'max_spatial_spread']]
+
+    def calculate_max_spread_per_group(self,df):
+      x = df[['lat','lon]].values
+
+      #Not enought points for ConvexHull algorithm
+      if len(x) < 3:
+         max_spread= 0.0 
+      else:
+         try:
+             hull = ConvexHull(x)
+             hull_points = x[hull.vertices]
+             distance_matrix = pwd(hull_points,hull_points,metric=self.haversine)
+             max_spread= distance_matrix.max()
+         except QhullError:
+             max_spread= 0.0 #ConvexHull failed     
+          
+      return pd.Series({
+        'max_spatial_spread':max_spread
+      })
     #we combine all the methods of this script
     #so we can get the DataFrame of the features
     def get_all_features(self):
@@ -181,11 +217,13 @@ class DataTransformer:
          rot = self.rot_per_id()
          traj = self.trajectory()
          spatial_metrics = self._compute_total_and_straightness_metrics()
+         max_spatial_spread = self.compute_max_spatial_spread()
          return (speed
                 .merge(acceleration, on=self.id_col)
                 .merge(rot, on=self.id_col)
                 .merge(traj,on=self.id_col)
                 .merge(spatial_metrics,on=self.id_col)
+                .merge(max_spatial_spread,on=self.id_col)
                 )
 
     def trajectory(self):
