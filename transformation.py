@@ -5,6 +5,7 @@ from sklearn.metrics import pairwise_distances as pwd
 from scipy.spatial import ConvexHull, QhullError
 import numpy as np
 from geopy.distance import geodesic
+from scipy.interpolate import CubicSpline
 '''
 features for extraction:
 1) ROT: mean value , std
@@ -16,7 +17,7 @@ features for extraction:
 class DataTransformer:
     def __init__(self,dataset_path,time_col='t',id_col='shipid',
                  speed_col='speed',heading_col='heading',lat_col='lat',
-                 long_col='long',course_col='course',shiptype_col='shiptype'
+                 lon_col='lon',course_col='course',shiptype_col='shiptype'
                  ,destination_col='destination',numeric_columns=None,categorical_columns=None):
         self.dataset_path = dataset_path
         self.data = None
@@ -25,7 +26,7 @@ class DataTransformer:
         self.speed_col = speed_col
         self.heading_col = heading_col
         self.lat_col = lat_col
-        self.long_col = long_col
+        self.lon_col = lon_col
         self.course_col = course_col
         self.destination_col = destination_col
         self.shiptype_col =shiptype_col
@@ -145,7 +146,7 @@ class DataTransformer:
 
    #Total Distance and Tortuosity and Straightness_Ratio
     def _compute_total_and_straightness_metrics(self):
-        required_cols = [self.id_col, self.time_col, self.lat_col, self.long_col]
+        required_cols = [self.id_col, self.time_col, self.lat_col, self.lon_col]
         if not all(col in self.data.columns for col in required_cols):
             raise ValueError("Missing one or more required columns in the dataset.")
 
@@ -158,7 +159,7 @@ class DataTransformer:
         return result[[self.id_col, 'total_distance_km', 'straightness_ratio', 'tortuosity']]
 
     def _compute_metrics(self, group):
-        coords = list(zip(group[self.lat_col], group[self.long_col]))
+        coords = list(zip(group[self.lat_col], group[self.lon_col]))
         total_distance = sum(
             geodesic(coords[i], coords[i + 1]).kilometers
             for i in range(len(coords) - 1)
@@ -181,7 +182,7 @@ class DataTransformer:
           return geodesic(x,y).meters
    
     def compute_max_spatial_spread(self):
-         required_cols = [self.id_col,self.time_col,self.lat_col,self.long_col]
+         required_cols = [self.id_col,self.time_col,self.lat_col,self.lon_col]
          if not all(col in self.data.columns for col in required_cols):
               raise ValueError("Missing one or more required columns")
          
@@ -209,6 +210,58 @@ class DataTransformer:
       return pd.Series({
         'max_spatial_spread':max_spread
       })
+    
+
+
+
+    def curvature_results(self):
+      required_columns = [self.id_col,self.lat_col,self.lon_col]
+      if not all(cols in self.data.columns for cols in required_columns):
+             raise ValueError("Missing Columns")
+    
+      result = self.data.groupby(self.id_col).apply(
+          lambda group: self.curvature_calculation(group,self.time_col,self.lat_col,self.lon_col)
+      ).reset_index()
+      return result[[self.id_col,"max_curvature","min_curvature","mean_curvature","std_curvature","median_curvature"]]
+
+    def curvature_calculation(self,group,time_col,lat_col,lon_col,n=100_000):
+
+          if group.shape[0] < 3:
+               return pd.Series({"max_curvature": 0.0,
+                    "min_curvature": 0.0,
+                    "mean_curvature": 0.0,
+                    "std_curvature": 0.0,
+                    "median_curvature": 0.0
+                    }) 
+
+          t = group.sort_values(by=time_col)
+          t = np.linspace(0,1,group.shape[0])
+
+          t_fine = np.linspace(0,1,n)
+
+          lat_spline = CubicSpline(t, group[lat_col].values)
+          lon_spline = CubicSpline(t, group[lon_col].values)
+
+          # Fine time interval
+          t_fine = np.linspace(0, 1, n)
+
+          # Approximate derivatives over the fined time
+          dlat = lat_spline(t_fine, 1)
+          dlon = lon_spline(t_fine, 1)
+          ddlat = lat_spline(t_fine, 2)
+          ddlon = lon_spline(t_fine, 2)
+
+          # Compute curvature over the fined time
+          curv = (dlat * ddlon - dlon * ddlat) / (dlat**2 + dlon**2)**1.5
+
+          return pd.Series({"max_curvature": curv.max(),
+                    "min_curvature": curv.min(),
+                    "mean_curvature": curv.mean(),
+                    "std_curvature": curv.std(),
+                    "median_curvature": np.median(curv)
+                    })
+
+
     #we combine all the methods of this script
     #so we can get the DataFrame of the features
     def get_all_features(self):
@@ -218,17 +271,19 @@ class DataTransformer:
          traj = self.trajectory()
          spatial_metrics = self._compute_total_and_straightness_metrics()
          max_spatial_spread = self.compute_max_spatial_spread()
+         curvature = self.curvature_results()
          return (speed
                 .merge(acceleration, on=self.id_col)
                 .merge(rot, on=self.id_col)
                 .merge(traj,on=self.id_col)
                 .merge(spatial_metrics,on=self.id_col)
                 .merge(max_spatial_spread,on=self.id_col)
+                .merge(curvature,on=self.id_col)
                 )
 
     def trajectory(self):
-         if self.long_col not in self.data.columns:
-              raise ValueError(f'{self.long_col} not in the Dataset Columns')
+         if self.lon_col not in self.data.columns:
+              raise ValueError(f'{self.lon_col} not in the Dataset Columns')
          if self.lat_col not in self.data.columns:
               raise ValueError(f'{self.lat_col} not in the Dataset column')
          new_data = self.data
@@ -237,22 +292,22 @@ class DataTransformer:
          grouped  = new_data.sort_values([self.id_col,self.time_col]).groupby(self.id_col)
          features = grouped.agg(
               start_lat = (self.lat_col,'first'),
-              start_long = (self.long_col,'first'),
+              start_lon = (self.lon_col,'first'),
               end_lat = (self.lat_col,'last'),
-              end_long = (self.long_col,'last'),
+              end_lon = (self.lon_col,'last'),
               start_time = (self.time_col,'first'),
               end_time = (self.time_col , 'last')
          )
          features['duration_second'] = (features['end_time']-features['start_time']).dt.total_seconds()
          features['duration_hour'] = features['duration_second']/3600
          features = features.reset_index()
-         return features[[self.id_col,'start_lat','start_long','end_lat',
-                          'end_long','start_time','end_time','duration_second'
+         return features[[self.id_col,'start_lat','start_lon','end_lat',
+                          'end_lon','start_time','end_time','duration_second'
                           ,'duration_hour']]
 
 #examples below if you want to test it remove the ""
 
-"""
+
 data_transform = DataTransformer(
         dataset_path='ais.csv',
         time_col='t',
@@ -260,7 +315,7 @@ data_transform = DataTransformer(
         speed_col='speed',
         heading_col='heading',
         lat_col='lat',
-        long_col='lon',
+        lon_col='lon',
         course_col='course',
         shiptype_col='shiptype',
         destination_col='destination',
@@ -270,12 +325,8 @@ data_transform = DataTransformer(
 
 data_transform.load_data()
 data_transform.transform_dataset()
-acceleration_df = data_transform.acceleration_per_id()
-rot_df = data_transform.rot_per_id()
-speed_df = data_transform.average_speed_per_id()
 features_df = data_transform.get_all_features()
 print(features_df)
 
-"""
 
 
