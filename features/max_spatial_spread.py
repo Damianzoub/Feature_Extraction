@@ -23,7 +23,7 @@ from sklearn.metrics import pairwise_distances as pwd
 from geopy.distance import geodesic
 import pandas as pd
 import numpy as np
-from scipy.spatial import ConvexHull
+from scipy.spatial import ConvexHull , QhullError
 
 #Haversine formula
 def haversine(x, y):
