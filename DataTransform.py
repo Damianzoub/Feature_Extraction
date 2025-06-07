@@ -8,7 +8,7 @@ from features.acceleration import acceleration_per_id
 from features.rot import rot_per_id
 from features.trajectory import trajectory
 from features.distance_and_straightness import _compute_total_and_straightness_metrics
-from features.max_spread import compute_max_spatial_spread
+from features.max_spatial_spread import compute_max_spatial_spread
 
 
 class DataTransformer:
