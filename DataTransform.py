@@ -9,6 +9,7 @@ from features.rot import rot_per_id
 from features.trajectory import trajectory
 from features.distance_and_straightness import _compute_total_and_straightness_metrics
 from features.max_spatial_spread import compute_max_spatial_spread
+from features.curvature import curvature_results
 
 
 class DataTransformer:
@@ -48,11 +49,14 @@ class DataTransformer:
         traj = trajectory(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
         distance_metrics = _compute_total_and_straightness_metrics(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
         max_spread = compute_max_spatial_spread(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
+        curvature = curvature_results(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
+
 
         return (speed.merge(acceleration,on=self.id_col)
                 .merge(rot,on=self.id_col)
                 .merge(traj,on=self.id_col)
                 .merge(distance_metrics,on=self.id_col)
                 .merge(max_spread,on=self.id_col)
+                .merge(curvature,on=self.id_col)
                 )
         
