@@ -260,8 +260,28 @@ class DataTransformer:
                     "std_curvature": curv.std(),
                     "median_curvature": np.median(curv)
                     })
+    #statisticla info for every trajectory 
+    def statistical_measures(self):
+         speed = self.average_speed_per_id()
+         acceleration = self.acceleration_per_id()
+         rot = self.rot_per_id()
+         curvature = self.curvature_results()
 
+         return (
+              speed.merge(acceleration,on=self.id_col)
+              .merge(rot,on=self.id_col)
+              .merge(curvature,on=self.id_col)
+         )
+    #Information about every trajectory (timing and location info)
+    def features_per_se(self):
+         traj = self.trajectory()
+         spatial_metrics = self._compute_total_and_straightness_metrics()
+         max_spatial_spread = self.compute_max_spatial_spread()
 
+         return (
+              traj.merge(spatial_metrics,on=self.id_col)
+              .merge(max_spatial_spread,on=self.id_col)
+         )
     #we combine all the methods of this script
     #so we can get the DataFrame of the features
     def get_all_features(self):
