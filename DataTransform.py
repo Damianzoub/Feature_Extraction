@@ -42,6 +42,29 @@ class DataTransformer:
     def exist_null(self):
         return [(col,self.data[col].isnull().sum()) for col in self.data.columns if self.data[col].isnull().sum() >0 ] or None
 
+    #Returns a DataFrame with some statistical features for every ID
+    def statistical_measures(self):
+         speed = self.average_speed_per_id()
+         acceleration = self.acceleration_per_id()
+         rot = self.rot_per_id()
+         curvature = self.curvature_results()
+
+         return (
+              speed.merge(acceleration,on=self.id_col)
+              .merge(rot,on=self.id_col)
+              .merge(curvature,on=self.id_col)
+         )
+    #Returns DataFrame with features per se
+    def features_per_se(self):
+         traj = self.trajectory()
+         spatial_metrics = self._compute_total_and_straightness_metrics()
+         max_spatial_spread = self.compute_max_spatial_spread()
+
+         return (
+              traj.merge(spatial_metrics,on=self.id_col)
+              .merge(max_spatial_spread,on=self.id_col)
+         )
+        
     def get_all_features(self):
         speed = average_speed_per_id(self.data,self.id_col,self.time_col,self.speed_col)
         acceleration= acceleration_per_id(self.data,self.time_col,self.id_col,self.speed_col)
