@@ -64,6 +64,20 @@ class DataTransformer:
               traj.merge(spatial_metrics,on=self.id_col)
               .merge(max_spatial_spread,on=self.id_col)
          )
+
+    def extract_features(self,mode='all'):
+        """
+        mode: 'all' | 'statistical' | 'per_se'
+        Returns the selected feature set.
+        """
+        if mode == "statistical":
+            return self.statistical_measures()
+        elif mode == "per_se":
+            return self.features_per_se()
+        elif mode == "all":
+            return self.get_all_features()
+        else:
+            raise ValueError("Invalid mode. Choose from: 'all', 'statistical', or 'per_se'")
         
     def get_all_features(self):
         speed = average_speed_per_id(self.data,self.id_col,self.time_col,self.speed_col)
