@@ -10,6 +10,7 @@ from features.trajectory import trajectory
 from features.distance_and_straightness import _compute_total_and_straightness_metrics
 from features.max_spatial_spread import compute_max_spatial_spread
 from features.curvature import curvature_results
+from features.stops import count_stops
 
 
 class DataTransformer:
@@ -44,10 +45,10 @@ class DataTransformer:
 
     #Returns a DataFrame with some statistical features for every ID
     def statistical_measures(self):
-         speed = self.average_speed_per_id()
-         acceleration = self.acceleration_per_id()
-         rot = self.rot_per_id()
-         curvature = self.curvature_results()
+         speed = average_speed_per_id(self.data,self.id_col,self.time_col,self.speed_col)
+         acceleration = acceleration_per_id(self.data,self.time_col,self.id_col,self.speed_col)
+         rot = rot_per_id(self.data,self.heading_col,self.id_col,self.time_col)
+         curvature = curvature_results(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
 
          return (
               speed.merge(acceleration,on=self.id_col)
@@ -56,13 +57,14 @@ class DataTransformer:
          )
     #Returns DataFrame with features per se
     def features_per_se(self):
-         traj = self.trajectory()
-         spatial_metrics = self._compute_total_and_straightness_metrics()
-         max_spatial_spread = self.compute_max_spatial_spread()
-
+         traj = trajectory(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
+         distance_metrics = _compute_total_and_straightness_metrics(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
+         max_spatial_spread = compute_max_spatial_spread(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
+         stop = count_stops(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col,self.speed_col)
          return (
-              traj.merge(spatial_metrics,on=self.id_col)
+              traj.merge(distance_metrics,on=self.id_col)
               .merge(max_spatial_spread,on=self.id_col)
+              .merge(stop,on=self.id_col)
          )
 
     def extract_features(self,mode='all'):
@@ -85,15 +87,16 @@ class DataTransformer:
         rot = rot_per_id(self.data,self.heading_col,self.id_col,self.time_col)
         traj = trajectory(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
         distance_metrics = _compute_total_and_straightness_metrics(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
-        max_spread = compute_max_spatial_spread(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
+        max_spatial_spread = compute_max_spatial_spread(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
         curvature = curvature_results(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col)
-
+        stop = count_stops(self.data,self.id_col,self.time_col,self.lat_col,self.lon_col,self.speed_col)
 
         return (speed.merge(acceleration,on=self.id_col)
                 .merge(rot,on=self.id_col)
                 .merge(traj,on=self.id_col)
                 .merge(distance_metrics,on=self.id_col)
-                .merge(max_spread,on=self.id_col)
+                .merge(max_spatial_spread,on=self.id_col)
                 .merge(curvature,on=self.id_col)
+                .merge(stop,on=self.id_col)
                 )
         
