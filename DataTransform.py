@@ -11,7 +11,7 @@ from features.distance_and_straightness import _compute_total_and_straightness_m
 from features.max_spatial_spread import compute_max_spatial_spread
 from features.curvature import curvature_results
 from features.stops import count_stops
-
+from utils.cache_utils import save_cache,load_cache
 
 class DataTransformer:
     def __init__(self,dataset_path,time_col='t',id_col='shipid',speed_col='speed',
@@ -81,6 +81,22 @@ class DataTransformer:
         else:
             raise ValueError("Invalid mode. Choose from: 'all', 'statistical', or 'per_se'")
         
+    """
+    implemented to put and save the data to cached file
+    to save time with the calculations
+    """
+    def get_cached_features(self,mode='all',cache_path='cache/features_all.pkl'):
+        features = load_cache(cache_path)
+        if features is not None:
+            print("Loaded features from cache")
+            return features
+
+        print("Computing features....")
+        features = self.extract_features(mode=mode)
+        save_cache(features,cache_path)
+        print("Saved features to cache")
+        return features
+    
     def get_all_features(self):
         speed = average_speed_per_id(self.data,self.id_col,self.time_col,self.speed_col)
         acceleration= acceleration_per_id(self.data,self.time_col,self.id_col,self.speed_col)
