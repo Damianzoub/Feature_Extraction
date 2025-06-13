@@ -17,5 +17,5 @@ dt = DataTransformer(
 
 dt.load_data()
 dt.transfrom_dataset()
-features_df = dt.get_all_features()
+features_df = dt.get_cached_features(mode='all')
 print(features_df)
