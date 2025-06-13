@@ -24,7 +24,7 @@ pip install -r requirements.txt
 1. Initialize the Transformer
     ```python
 
-    from transformation import DataTransformer
+    from DataTransform import DataTransformer
 
     data_transform = DataTransformer(
         dataset_path='ais.csv',
@@ -41,6 +41,24 @@ pip install -r requirements.txt
         categorical_columns=['shiptype', 'destination']
     )
     ```
+    from DataTransform import DataTransformer
+
+dt = DataTransformer(
+    dataset_path="ais.csv",
+    time_col="t",
+    id_col="shipid",
+    speed_col="speed",
+    heading_col="heading",
+    lat_col="lat",
+    long_col="lon",
+    course_col="course",
+    shiptype_col="shiptype",
+    destination_col="destination",
+    numeric_cols=['heading','course','speed'],
+    categorical_cols=['shiptype','destination']
+)
+
+
 2. Load and Preprocess Data
     ```python
     data_transform.load_data()
@@ -49,8 +67,6 @@ pip install -r requirements.txt
 
 3. Extract Features
     ```python
-    acceleration_df = data_transform.acceleration_per_id()
-    rot_df = data_transform.rot_per_id()
-    speed_df = data_transform.average_speed_per_id()
-    features_df = data_transform.get_all_features()
+    features_df = det.get_cached_features(mode='all')
+    print(features_df)
     ```
