@@ -84,10 +84,10 @@ def max_spread(df, ch=False):
     return distance_matrix.max()
 
 # test
-data = pd.read_csv(r"C:\Users\user\Documents\Feature_Extraction\Feature_Extraction\ais.csv")
-data = data.loc[data.shipid == data.shipid.iloc[0]]
+#data = pd.read_csv(r"C:\Users\user\Documents\Feature_Extraction\Feature_Extraction\ais.csv")
+#data = data.loc[data.shipid == data.shipid.iloc[0]]
 
-max_spread(data)
+#max_spread(data)
 
 
 
