@@ -29,7 +29,7 @@ def trajectory(df,id_col,time_col,lat_col,long_col):
     features['end_minute'] = features['end_time'].dt.minute
     
     features = features.reset_index()
-    return features[[self.id_col, 'start_lat', 'start_lon', 'end_lat', 'end_lon',
+    return features[['shipid', 'start_lat', 'start_long', 'end_lat', 'end_long',
            'start_time', 'end_time', 'duration_second',
            'start_year', 'start_month', 'start_day', 'start_hour', 'start_minute',
            'end_year', 'end_month', 'end_day', 'end_hour', 'end_minute'
