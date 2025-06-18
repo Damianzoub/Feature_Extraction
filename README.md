@@ -33,12 +33,12 @@ pip install -r requirements.txt
         speed_col='speed',
         heading_col='heading',
         lat_col='lat',
-        long_col='lon',
+        lon_col='lon',
         course_col='course',
         shiptype_col='shiptype',
         destination_col='destination',
-        numeric_columns=['heading', 'course', 'speed'],
-        categorical_columns=['shiptype', 'destination']
+        numeric_cols=['heading', 'course', 'speed'],
+        categorical_cols=['shiptype', 'destination']
     )
     ```
     from DataTransform import DataTransformer
