@@ -35,7 +35,7 @@ class DataTransformer:
     def load_data(self):
         self.data = load_csv(self.dataset_path)
     
-    def transfrom_dataset(self):
+    def transform_dataset(self):
         if self.data is None:
             raise ValueError('No data loaded')
         self.data = transform_dataset(self.data,numeric_columns=self.numeric_cols,categoriclal_columns=self.categorical_cols)
