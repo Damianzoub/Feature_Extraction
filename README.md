@@ -19,6 +19,13 @@ cd Feature_Extraction
 pip install -r requirements.txt
 ```
 
+## ADDING VIRTUAL ENVIRONMENT AND INSTALLING REQUIREMENTS 
+```bash 
+python -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+```
+
 ## Usage
 
 1. Initialize the Transformer
@@ -68,5 +75,5 @@ dt = DataTransformer(
 3. Extract Features
     ```python
     features_df = det.get_cached_features(mode='all')
-    print(features_df)
+    print(features_df.head())
     ```
