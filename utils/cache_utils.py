@@ -15,5 +15,5 @@ def save_cache(data,filepath):
 def load_cache(filepath):
     if os.path.exists(filepath):
         with open(filepath,'rb') as f:
-            return pickle.load()
+            return pickle.load(f)
     return None
