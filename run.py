@@ -7,7 +7,7 @@ dt = DataTransformer(
     speed_col="speed",
     heading_col="heading",
     lat_col="lat",
-    long_col="lon",
+    lon_col="lon",
     course_col="course",
     shiptype_col="shiptype",
     destination_col="destination",
@@ -16,6 +16,6 @@ dt = DataTransformer(
 )
 
 dt.load_data()
-dt.transfrom_dataset()
+dt.transform_dataset()
 features_df = dt.get_cached_features(mode='all')
 print(features_df)
