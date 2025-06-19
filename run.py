@@ -18,4 +18,4 @@ dt = DataTransformer(
 dt.load_data()
 dt.transform_dataset()
 features_df = dt.get_cached_features(mode='all')
-print(features_df)
+print(features_df.head())
