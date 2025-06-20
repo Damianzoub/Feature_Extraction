@@ -20,7 +20,7 @@ class ClassifierPipeline:
             "Random Forest": RandomForestClassifier(random_state=42),
             "Logistic Regression": LogisticRegression(),
             "Naive Bayes": GaussianNB(),
-            "SVM": SVC(probability=True),  # Enable predict_proba for future use
+            "SVM": SVC(),  
         }
         self.metrics_summary=[]
 
