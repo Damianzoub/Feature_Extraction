@@ -11,14 +11,19 @@ shiptype_dict = {
 def classify_shiptype(code):
     try:
         code = int(code)
-    except:
-        return "Unknown"
+        for code_range,label in shiptype_dict.items():
+            if code in code_range:
+                return label
     
-    for code_range,label in shiptype_dict.items():
-        if code in code_range:
-            return label
+        return "unknown"
+    except (ValueError,TypeError):
+        if isinstance(code, str):
+            label = code.strip().lower()
+            if label in shiptype_dict.values():
+                return label
+            return "unknown"
+        return "unknown"
     
-    return "unknown"
 
 def map_shiptype(series):
     return series.map(classify_shiptype)
