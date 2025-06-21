@@ -9,6 +9,7 @@ from features.stops import count_stops
 from utils.cache_utils import compute_or_load_feature
 from features.zigzag import zigzag_index
 from utils.shiptype_map import map_shiptype
+from utils.clean_utils import clean_features
 import os 
 
 """
@@ -50,12 +51,13 @@ class FeaturePipeline:
          curvature['zigzag_index'] = curvature['mean_curvature']*zigzag['std_heading']
          ship_meta = data[[self.id_col, self.shiptype_col]].drop_duplicates()
          ship_meta['shiptype_label'] = map_shiptype(ship_meta[self.shiptype_col])
-         return (
+         extract_df = (
               speed.merge(acceleration,on=self.id_col)
               .merge(rot,on=self.id_col)
               .merge(curvature,on=self.id_col)
               .merge(ship_meta[[self.id_col,'shiptype_label']],on=self.id_col,how='left')
          )
+         return clean_features(extract_df)
     #Returns DataFrame with features per se
     def features_per_se(self,data):
          traj = compute_or_load_feature('traj',self.dataset_name,lambda: trajectory(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
@@ -64,12 +66,13 @@ class FeaturePipeline:
          #stop = compute_or_load_feature("stop",self.dataset_name, lambda: count_stops(data,self.id_col,self.time_col,self.lat_col,self.lon_col,self.speed_col))
          ship_meta = data[[self.id_col, self.shiptype_col]].drop_duplicates()
          ship_meta['shiptype_label'] = map_shiptype(ship_meta[self.shiptype_col])
-         return (
+         extract_df= (
               traj.merge(distance_metrics,on=self.id_col)
               .merge(max_spatial_spread,on=self.id_col)
               #.merge(stop,on=self.id_col)
               .merge(ship_meta[[self.id_col,'shiptype_label']],on=self.id_col,how='left')
          )
+         return clean_features(extract_df)
     
     def extract_all(self,data):
         speed = compute_or_load_feature("speed",self.dataset_name, lambda: average_speed_per_id(data,self.id_col,self.time_col,self.speed_col))
@@ -84,7 +87,7 @@ class FeaturePipeline:
         curvature['zigzag_index'] = curvature['mean_curvature']*zigzag['std_heading']
         ship_meta = data[[self.id_col, self.shiptype_col]].drop_duplicates()
         ship_meta['shiptype_label'] = map_shiptype(ship_meta[self.shiptype_col])
-        return (speed.merge(acceleration,on=self.id_col)
+        extract_df= (speed.merge(acceleration,on=self.id_col)
                 .merge(rot,on=self.id_col)
                 .merge(traj,on=self.id_col)
                 .merge(distance_metrics,on=self.id_col)
@@ -93,3 +96,5 @@ class FeaturePipeline:
                 #.merge(stop,on=self.id_col)
                 .merge(ship_meta[[self.id_col,'shiptype_label']],on=self.id_col,how='left')
                 )
+        
+        return clean_features(extract_df)
