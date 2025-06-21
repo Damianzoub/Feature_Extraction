@@ -1,0 +1,34 @@
+dataset:
+  path: "ais.csv"
+  id_col: "shipid"
+  time_col: "t"
+  speed_col: "speed"
+  heading_col: "heading"
+  lat_col: "lat"
+  lon_col: "lon"
+  course_col: "course"
+  shiptype_col: "shiptype"
+  destination_col: "destination"
+  numeric_cols: ["heading", "course", "speed"]
+  categorical_cols: ["shiptype", "destination"]
+
+features:
+  mode: "all" # it can be statistical or per_se also
+  exclude_cols: ["shipid", "start_time", "end_time", "start_hour", "start_minute", 
+                 "end_hour", "end_minute", "std_speed", "zigzag_index", "shiptype"]
+
+labels:
+  include: ["fishing", "cargo"] #we can put more labels 
+
+classification:
+  test_size: 0.2 # we can modify it 
+  random_state: 42 #helps to stay with the same results
+  models: 
+    - Decision Tree
+    - Random Forest
+    - Logistic Regression
+    - Naive Bayes
+    - SVM
+
+output:
+  dir: "results"
