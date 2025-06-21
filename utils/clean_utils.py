@@ -3,8 +3,9 @@ import pandas as pd
 
 def clean_features(df: pd.DataFrame,fill_value: float = 0.0) -> pd.DataFrame:
 
+    numeric_df = df.select_dtypes(include=[np.number])
     has_nan = df.isnull().values.any()
-    has_inf = np.isinf(df.values).any()
+    has_inf = np.isinf(numeric_df.values).any()
     if not has_nan or not has_inf:
         return df
 
