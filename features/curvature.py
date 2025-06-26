@@ -19,7 +19,7 @@ def curvature_calculation(group,time_col,lat_col,lon_col,n=100_000):
           if group.shape[0] < 3:
                return pd.Series({"max_curvature": 0.0,
                     "min_curvature": 0.0,
-                    "mean_curvature": 0.0,
+                    "avg_curvature": 0.0,
                     "std_curvature": 0.0,
                     "median_curvature": 0.0
                 })
@@ -45,7 +45,7 @@ def curvature_calculation(group,time_col,lat_col,lon_col,n=100_000):
 
           return pd.Series({"max_curvature": curv.max(),
                     "min_curvature": curv.min(),
-                    "mean_curvature": curv.mean(),
+                    "avg_curvature": curv.mean(),
                     "std_curvature": curv.std(),
                     "median_curvature": np.median(curv)
                     })
@@ -81,8 +81,10 @@ def curvature(df, n=100000):
     # Compute curvature over the fined time
     curv = (dlat * ddlon - dlon * ddlat) / (dlat**2 + dlon**2)**1.5
 
-    return {"max_curvature": curv.max(),
+    return {
+            "max_curvature": curv.max(),
             "min_curvature": curv.min(),
-            "mean_curvature": curv.mean(),
+            "avg_curvature": curv.mean(),
             "std_curvature": curv.std(),
-            "median_curvature": np.median(curv)}
+            "median_curvature": np.median(curv)
+           }
