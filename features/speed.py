@@ -17,7 +17,8 @@ def compute_speed_from_position(df, id_col, time_col, lat_col, lon_col):
                              (new_df[lon_col] - new_df['lon_prev'])**2)
 
     # Compute time difference in seconds
-    new_df['time_diff'] = (new_df[time_col] - new_df['time_prev']).dt.total_seconds().fillna(1) +0.01
+    new_df['time_diff'] = (new_df[time_col] - new_df['time_prev']).dt.total_seconds().fillna(1) 
+    new_df['time_diff'] = new_df['time_diff'].apply(lambda x: x+0.000001 if x==0 else x)
 
     # Compute speed
     new_df['speed'] = new_df['dist'] / new_df['time_diff']
