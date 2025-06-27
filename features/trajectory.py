@@ -27,10 +27,13 @@ def trajectory(df,id_col,time_col,lat_col,long_col):
     features['end_day'] = features['end_time'].dt.day
     features['end_hour'] = features['end_time'].dt.hour
     features['end_minute'] = features['end_time'].dt.minute
+
+    features['start_timestamp'] = features['start_time'].apply(lambda x: int(x.timestamp()))
+    features['end_timestamp'] = features['end_time'].apply(lambda x: int(x.timestamp()))
     
     features = features.reset_index()
     return features[['shipid', 'start_lat', 'start_long', 'end_lat', 'end_long',
-           'start_time', 'end_time', 'duration_second',
+           'start_time', 'end_time','start_timestamp','end_timestamp', 'duration_second',
            'start_year', 'start_month', 'start_day', 'start_hour', 'start_minute',
            'end_year', 'end_month', 'end_day', 'end_hour', 'end_minute'
            ]]
