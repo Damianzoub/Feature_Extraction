@@ -6,7 +6,7 @@ from features.distance_and_straightness import _compute_total_and_straightness_m
 from features.max_spatial_spread import compute_max_spatial_spread
 from features.curvature import curvature_results
 from utils.cache_utils import compute_or_load_feature
-from features.zigzag import zigzag_index
+from features.zigzag import compute_zigzag
 from utils.shiptype_map import map_shiptype
 from utils.clean_utils import clean_features
 import os 
@@ -38,7 +38,7 @@ class FeaturePipeline:
          acceleration = compute_or_load_feature( "acceleration",self.dataset_name,lambda: acceleration_per_id(data,self.time_col,self.id_col,speed_col="speed"))
          rot = compute_or_load_feature("rot",self.dataset_name,lambda: compute_rot(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
          curvature = compute_or_load_feature('curvature',self.dataset_name,lambda: curvature_results(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
-         #zigzag = compute_or_load_feature("zigzag",self.dataset_name,lambda: zigzag_index(data,self.id_col,self.heading_col))
+         zigzag = compute_or_load_feature("zigzag",self.dataset_name,lambda: compute_zigzag(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
          #curvature['zigzag_index'] = curvature['mean_curvature']*zigzag['std_heading']
          ship_meta = data[[self.id_col, self.shiptype_col]].drop_duplicates()
          ship_meta['shiptype'] = map_shiptype(ship_meta[self.shiptype_col])
@@ -46,6 +46,7 @@ class FeaturePipeline:
               speed.merge(acceleration,on=self.id_col)
               .merge(rot,on=self.id_col)
               .merge(curvature,on=self.id_col)
+              .merge(zigzag,on=self.id_col)
               .merge(ship_meta[[self.id_col,'shiptype']],on=self.id_col,how='left')
          )
          return clean_features(extract_df)
@@ -70,7 +71,7 @@ class FeaturePipeline:
         acceleration = compute_or_load_feature( "acceleration",self.dataset_name,lambda: acceleration_per_id(data,self.time_col,self.id_col,speed_col="speed"))
         rot = compute_or_load_feature("rot",self.dataset_name,lambda: compute_rot(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
         curvature = compute_or_load_feature('curvature',self.dataset_name,lambda: curvature_results(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
-        #zigzag = compute_or_load_feature("zigzag",self.dataset_name,lambda: zigzag_index(data,self.id_col,self.heading_col))
+        zigzag = compute_or_load_feature("zigzag",self.dataset_name,lambda: compute_zigzag(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
         traj = compute_or_load_feature('traj',self.dataset_name,lambda: trajectory(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
         distance_metrics = compute_or_load_feature('distance_metrics',self.dataset_name,lambda: _compute_total_and_straightness_metrics(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
         max_spatial_spread = compute_or_load_feature( 'max_spatial_spread',self.dataset_name,lambda: compute_max_spatial_spread(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
@@ -84,6 +85,7 @@ class FeaturePipeline:
                 .merge(distance_metrics,on=self.id_col)
                 .merge(max_spatial_spread,on=self.id_col)
                 .merge(curvature,on=self.id_col)
+                .merge(zigzag,on=self.id_col)
                 #.merge(stop,on=self.id_col)
                 .merge(ship_meta[[self.id_col,'shiptype']],on=self.id_col,how='left')
                 )
