@@ -8,9 +8,8 @@ def calculate_bearing(lat1,lon1,lat2,lon2):
 
     x = np.sin(dLon)*np.cos(lat2)
     y = np.cos(lat1)*np.sin(lat2)-np.sin(lat1)*np.cos(lat2)*np.cos(dLon)
-
-    bearing = np.arctan2(x,y)
-    bearing = (bearing + 2 * np.pi) % (2 * np.pi)
+    bearing = (np.arctan2(x,y) + 2 * np.pi) % (2 * np.pi)
+    
     return bearing
 
 #angle_threshold is in degrees
