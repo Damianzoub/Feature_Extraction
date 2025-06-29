@@ -1,6 +1,10 @@
 import pandas as pd 
 import geopandas as gpd
 from movingpandas import TrajectoryCollection
+import warnings
+from movingpandas.trajectory import TimeZoneWarning
+
+warnings.filterwarnings('ignore',category=TimeZoneWarning)
 
 def count_stops(df,id_col,time_col,lat_col,lon_col,min_stop_duration='5min'):
         """
