@@ -1,41 +1,30 @@
-import pandas as pd
+import pandas as pd 
+import geopandas as gpd
+from movingpandas import TrajectoryCollection
 
-def count_stops(df,id_col,time_col,lat_col,lon_col,speed_col,stop_speed_threshold=0.5,min_stop_duration=300):
-    """
-        Group data by shipid and compute the stops for every shipid
-    """
-    required_cols = [id_col,time_col,lat_col,lon_col]
-    if not all(col in df.columns for col in required_cols):
-        raise ValueError("Missing one or more required columns")
-    new_df = df.sort_values(by=[id_col,time_col])
-
-    result = new_df.groupby(id_col).apply(
-        lambda group: _compute_stops(group,time_col,speed_col,stop_speed_threshold,min_stop_duration)
-    ).reset_index()
-
-    return result[[id_col,'num_stops']]
-
-
-def _compute_stops(group,time_col,speed_col,stop_speed_threshold,min_stop_duration):
-    stop_count = 0
-    in_stop = False
-    stop_start_time = None 
-
-    for i, row in group.iterrows():
-        if row[speed_col] <= stop_speed_threshold:
-            if not in_stop:
-                in_stop= True 
-                stop_start_time = row[time_col]
-            else:
-                if in_stop:
-                    stop_duration = (row[time_col]-stop_start_time).total_seconds()
-                    if stop_duration >= min_stop_duration:
-                        stop_duration +=1
-                    in_stop = False
+def count_stops(df,id_col,time_col,lat_col,lon_col,min_stop_duration='5min'):
+        """
+        Returns:
+            - DataFrame with columns [id_col,'stop_count']
+        """
         
-    if in_stop:
-        stop_duration = (group.iloc[-1][time_col]-stop_start_time).total_seconds()
-        if stop_duration >= min_stop_duration:
-            stop_count+=1
+        new_df = df.copy()
+        new_df[time_col] = pd.to_datetime(new_df[time_col])
         
-    return pd.Series({'num_stops':stop_count})
+        gdf = gpd.GeoDataFrame(
+            df,
+            geometry=gpd.points_from_xy(df[lon_col],df[lat_col]),
+            crs='EPSG:4326'
+        )
+        gdf = gdf.sort_values(by=[id_col,time_col])
+        
+        traj_col = TrajectoryCollection(gdf,traj_id_col=id_col,t=time_col)
+        min_duration = pd.Timedelta(min_stop_duration)
+        stops_summary = []
+        for traj in traj_col.trajectories:
+            stops = traj.get_stops(min_duration=min_duration)
+            stops_summary.append({
+                id_col:traj.id,
+                "stop_count":len(stops)
+            })
+        return pd.DataFrame(stops_summary)
