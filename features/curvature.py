@@ -12,7 +12,7 @@ def curvature_results(df,id_col,time_col,lat_col,lon_col):
       result = df.groupby(id_col).apply(
           lambda group: curvature_calculation(group,time_col,lat_col,lon_col)
       ).reset_index()
-      return result[[id_col,"max_curvature","min_curvature","mean_curvature","std_curvature","median_curvature"]]
+      return result[[id_col,"max_curvature","min_curvature","avg_curvature","std_curvature","median_curvature"]]
 
 def curvature_calculation(group,time_col,lat_col,lon_col,n=100_000):
 
