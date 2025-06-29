@@ -9,7 +9,6 @@ from utils.cache_utils import compute_or_load_feature
 from features.zigzag import compute_zigzag
 from utils.shiptype_map import map_shiptype
 from utils.clean_utils import clean_features
-from features.stops import count_stops
 import os 
 
 """
@@ -49,7 +48,8 @@ class FeaturePipeline:
               .merge(zigzag,on=self.id_col)
               .merge(ship_meta[[self.id_col,'shiptype']],on=self.id_col,how='left')
          )
-         return clean_features(extract_df)
+         extract_df = clean_features(extract_df)
+         return extract_df.drop_duplicates(subset=[self.id_col], keep='first')
     #Returns DataFrame with features per se
     def features_per_se(self,data):
          traj = compute_or_load_feature('traj',self.dataset_name,lambda: trajectory(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
@@ -64,7 +64,8 @@ class FeaturePipeline:
               #.merge(stop,on=self.id_col)
               .merge(ship_meta[[self.id_col,'shiptype']],on=self.id_col,how='left')
          )
-         return clean_features(extract_df)
+         extract_df = clean_features(extract_df)
+         return extract_df.drop_duplicates(subset=[self.id_col], keep='first')
     
     def extract_all(self,data):
         speed = compute_or_load_feature("speed",self.dataset_name, lambda: compute_speed_from_position(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
@@ -89,4 +90,5 @@ class FeaturePipeline:
                 .merge(ship_meta[[self.id_col,'shiptype']],on=self.id_col,how='left')
                 )
         
-        return clean_features(extract_df)
+        extract_df = clean_features(extract_df)
+        return extract_df.drop_duplicates(subset=[self.id_col], keep='first')
