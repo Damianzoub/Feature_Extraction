@@ -1,12 +1,13 @@
 import pandas as pd 
 import geopandas as gpd
 from movingpandas import TrajectoryCollection
-import warnings
+import warnings 
 from movingpandas.trajectory import TimeZoneWarning
+from movingpandas.trajectory_stop_detector import TrajectoryStopDetector
 
 warnings.filterwarnings('ignore',category=TimeZoneWarning)
 
-def count_stops(df,id_col,time_col,lat_col,lon_col,min_stop_duration='5min'):
+def count_stops(df,id_col,time_col,lat_col,lon_col,min_stop_duration='5min',max_diameter=10):
         """
         Returns:
             - DataFrame with columns [id_col,'stop_count']
@@ -26,7 +27,8 @@ def count_stops(df,id_col,time_col,lat_col,lon_col,min_stop_duration='5min'):
         min_duration = pd.Timedelta(min_stop_duration)
         stops_summary = []
         for traj in traj_col.trajectories:
-            stops = traj.get_stops(min_duration=min_duration)
+            detector = TrajectoryStopDetector(traj)
+            stops = detector.get_stop_segments(min_duration=min_duration,max_diameter=max_diameter)
             stops_summary.append({
                 id_col:traj.id,
                 "stop_count":len(stops)
