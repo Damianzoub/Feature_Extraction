@@ -2,12 +2,12 @@ import pandas as pd
 #file path utils for 
 from utils.data_loader import load_csv
 from utils.Imputer import transform_dataset
-from utils.cache_utils import save_cache,load_cache
+from utils.filter_trajectory_length import filter_trajectories_by_length
 #connecting the feature_pipeline with DataTransform for the extraction of the features
 from feature_pipeline.feature_pipeline import FeaturePipeline
 class DataTransformer:
     def __init__(self,dataset_path,time_col='t',id_col='shipid',lat_col='lat',lon_col='lon'
-                 ,shiptype_col='shiptype',numeric_cols=None,categorical_cols=None):
+                 ,shiptype_col='shiptype',numeric_cols=None,categorical_cols=None,min_traj_size=5):
         
         self.dataset_path= dataset_path
         self.data = None
@@ -18,7 +18,7 @@ class DataTransformer:
         self.shiptype_col=shiptype_col
         self.numeric_cols = numeric_cols
         self.categorical_cols=categorical_cols
-
+        self.min_traj_size = min_traj_size
         self.col_kwargs = {
             "dataset_path":dataset_path,
             "time_col": time_col,
@@ -35,7 +35,7 @@ class DataTransformer:
         if self.data is None:
             raise ValueError('No data loaded')
         self.data = transform_dataset(self.data,numeric_columns=self.numeric_cols,categoriclal_columns=self.categorical_cols)
-    
+        self.data = filter_trajectories_by_length(self.data,id_col=self.id_col,min_points=self.min_traj_size)
     def exist_null(self):
         return [(col,self.data[col].isnull().sum()) for col in self.data.columns if self.data[col].isnull().sum() >0 ] or None
 
