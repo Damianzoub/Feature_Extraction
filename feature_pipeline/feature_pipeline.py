@@ -9,6 +9,7 @@ from utils.cache_utils import compute_or_load_feature
 from features.zigzag import compute_zigzag
 from utils.shiptype_map import map_shiptype
 from utils.clean_utils import clean_features
+from features.stops import count_stops
 import os 
 
 """
@@ -39,7 +40,6 @@ class FeaturePipeline:
          rot = compute_or_load_feature("rot",self.dataset_name,lambda: compute_rot(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
          curvature = compute_or_load_feature('curvature',self.dataset_name,lambda: curvature_results(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
          zigzag = compute_or_load_feature("zigzag",self.dataset_name,lambda: compute_zigzag(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
-         #curvature['zigzag_index'] = curvature['mean_curvature']*zigzag['std_heading']
          ship_meta = data[[self.id_col, self.shiptype_col]].drop_duplicates()
          ship_meta['shiptype'] = map_shiptype(ship_meta[self.shiptype_col])
          extract_df = (
@@ -55,7 +55,7 @@ class FeaturePipeline:
          traj = compute_or_load_feature('traj',self.dataset_name,lambda: trajectory(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
          distance_metrics = compute_or_load_feature('distance_metrics',self.dataset_name,lambda: _compute_total_and_straightness_metrics(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
          max_spatial_spread = compute_or_load_feature( 'max_spatial_spread',self.dataset_name,lambda: compute_max_spatial_spread(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
-         #stop = compute_or_load_feature("stop",self.dataset_name, lambda: count_stops(data,self.id_col,self.time_col,self.lat_col,self.lon_col,self.speed_col))
+         #stop = compute_or_load_feature("stop",self.dataset_name, lambda: count_stops(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
          ship_meta = data[[self.id_col, self.shiptype_col]].drop_duplicates()
          ship_meta['shiptype'] = map_shiptype(ship_meta[self.shiptype_col])
          extract_df= (
@@ -75,8 +75,7 @@ class FeaturePipeline:
         traj = compute_or_load_feature('traj',self.dataset_name,lambda: trajectory(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
         distance_metrics = compute_or_load_feature('distance_metrics',self.dataset_name,lambda: _compute_total_and_straightness_metrics(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
         max_spatial_spread = compute_or_load_feature( 'max_spatial_spread',self.dataset_name,lambda: compute_max_spatial_spread(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
-        #stop = compute_or_load_feature("stop",self.dataset_name, lambda: count_stops(data,self.id_col,self.time_col,self.lat_col,self.lon_col,self.speed_col))
-        #curvature['zigzag_index'] = curvature['mean_curvature']*zigzag['std_heading']
+        #stop = compute_or_load_feature("stop",self.dataset_name, lambda: count_stops(data,self.id_col,self.time_col,self.lat_col,self.lon_col))
         ship_meta = data[[self.id_col, self.shiptype_col]].drop_duplicates()
         ship_meta['shiptype'] = map_shiptype(ship_meta[self.shiptype_col])
         extract_df= (speed.merge(acceleration,on=self.id_col)
