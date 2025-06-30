@@ -17,7 +17,7 @@ def count_stops(df,id_col,time_col,lat_col,lon_col,min_stop_duration='5min',max_
         new_df[time_col] = pd.to_datetime(new_df[time_col])
         
         gdf = gpd.GeoDataFrame(
-            df,
+            new_df,
             geometry=gpd.points_from_xy(df[lon_col],df[lat_col]),
             crs='EPSG:4326'
         )
